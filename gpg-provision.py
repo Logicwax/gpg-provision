@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import os
 import subprocess
 import sys
@@ -216,7 +217,7 @@ if __name__ == '__main__':
     keyType = "rsa"
   else:
     keyType = "secp256k1"
-  password = raw_input('Desired Password: ')
+  password = raw_input('Desired GPG back-up file password: ')
   expire = raw_input('Expire time in years (integer): ')
   userpin = raw_input('Desired Yubikey/smartcard user pin#: ')
   adminpin = raw_input('Desired Yubikey/smartcard admin pin#: ')
@@ -246,9 +247,10 @@ if __name__ == '__main__':
   GPG_card_configure_adminpin(adminpin)
   GPG_ca_card_write(masterkeyID, password, adminpin)
   os.system("reset")
-  raw_input("Your CA masterkey yubikey/smartcard is now setup.  Please remove it and store " \
+  print("Your CA masterkey yubikey/smartcard is now setup.  Please remove it and store " \
     + "it in a safe location\n\nNow, please insert your yubikey/smartcard to be used for subkeys " \
-    + "(everyday tasks such as signing, authorizing, and encryption/decryption)\n\nPress enter when ready")
+    + "(everyday tasks such as signing, authorizing, and encryption/decryption)\n\n")
+  while raw_input("Type \"yes\" when ready: ").strip() != "yes": pass
   os.system("killall gpg-agent scdaemon ssh-agent > /dev/null 2>&1")
   GPG_card_factory_reset()
   GPG_card_configure_userpin(userpin)
