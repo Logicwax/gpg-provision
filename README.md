@@ -12,11 +12,17 @@ This script is an exact automation of [lrvick's](https://github.com/lrvick) GPG 
 * python-ptyprocess
 * scdaemon
 * pcscd
+* ykman (YubiKey Manager CLI)
 
 
 ## Installation ##
 
+### Debian Packages ###
 `sudo apt-get install gpg scdaemon pcscd python-is-python2 python-ptyprocess`
+
+### YubiKey Manager ###
+
+` sudo apt-add-repository ppa:yubico/stable && sudo apt-get update && sudo apt install yubikey-manager`
 
 ## How to use ##
 
