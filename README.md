@@ -8,8 +8,7 @@ This script is an exact automation of [lrvick's](https://github.com/lrvick) GPG 
 ## Requirements ##
 
 * gpg
-* python-is-python2
-* python-ptyprocess
+* python3-ptyprocess
 * scdaemon
 * pcscd
 * ykman (YubiKey Manager CLI)
@@ -18,7 +17,7 @@ This script is an exact automation of [lrvick's](https://github.com/lrvick) GPG 
 ## Installation ##
 
 ### Debian Packages ###
-`sudo apt-get install gpg scdaemon pcscd python-is-python2 python-ptyprocess`
+`sudo apt-get install gpg scdaemon pcscd python3-ptyprocess`
 
 ### YubiKey Manager ###
 

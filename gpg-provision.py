@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import subprocess
@@ -19,7 +19,7 @@ def gpg_get_masterkey():
     stdout=subprocess.PIPE, \
     shell=True \
     )
-  return gpg.communicate()[0].strip()
+  return gpg.communicate()[0].decode().strip()
 
 
 def gpg_add_auth_subkey(keyID, password, expire, keyType):
@@ -30,7 +30,7 @@ def gpg_add_auth_subkey(keyID, password, expire, keyType):
     cmd_seq = "echo 11; echo A; echo S; echo Q; echo 9; echo " + str(expire) + "y; echo '" + password \
     + "'; echo 'save';"
   gpg = subprocess.Popen( \
-    "bash -c \"{ echo addkey; " + cmd_seq + " } | " + gpg_cmdline + " --edit-key " + keyID + "\"", \
+    "bash -c \"{ echo addkey; " + cmd_seq + " } | " + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
   gpg.communicate()[0]
@@ -42,7 +42,7 @@ def gpg_add_enc_subkey(keyID, password, expire, keyType):
   else:
     cmd_seq = "echo 12; echo 9; echo " + str(expire) + "y; echo '" + password + "'; echo 'save';"
   gpg = subprocess.Popen( \
-    "bash -c \"{ echo addkey; " + cmd_seq + " } | " + gpg_cmdline + " --edit-key " + keyID + "\"", \
+    "bash -c \"{ echo addkey; " + cmd_seq + " } | " + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
   gpg.communicate()[0]
@@ -55,7 +55,7 @@ def gpg_add_sig_subkey(keyID, password, expire, keyType):
     cmd_seq = "echo 10; echo 9; echo " + str(expire) + "y; echo '" + password + "'; echo 'save';"
   gpg = subprocess.Popen( \
     "bash -c \"{ echo addkey; " + cmd_seq + " } | " \
-    + gpg_cmdline + " --edit-key " + keyID + "\"", \
+    + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
   gpg.communicate()[0]
@@ -79,12 +79,12 @@ def gpg_gen_revoke_cert(keyID, password):
   keys_path = os.path.join(os.path.dirname(__file__) , "keys")
   cmd_seq = "echo y; echo 0; echo ' '; echo y; echo '" + password + "';"
   gpg = subprocess.Popen( \
-    "bash -c \"{ " + cmd_seq + " } | " + gpg_cmdline + " --gen-revoke " + keyID + "\"", \
+    "bash -c \"{ " + cmd_seq + " } | " + gpg_cmdline + " --gen-revoke " + str(keyID) + "\"", \
     stdout=subprocess.PIPE, \
     shell=True)
   revoke_cert = gpg.communicate()[0]
-  certFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", keyID + ".private.revoke.cert.asc"), "w")
-  certFile.write(revoke_cert)
+  certFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", str(keyID) + ".private.revoke.cert.asc"), "w")
+  certFile.write(revoke_cert.decode())
   certFile.close()
 
 
@@ -92,36 +92,36 @@ def gpg_export_keychain(keyID, password, keyType):
   keys_path = os.path.join(os.path.dirname(__file__) , "keys")
   # Export private master CA key to file
   gpg = subprocess.Popen("bash -c \"{ echo '" + password + "'; } | " + gpg_cmdline \
-    + "--armor --export-secret-keys " + keyID + "\"", \
+    + "--armor --export-secret-keys " + str(keyID) + "\"", \
     stdout=subprocess.PIPE, \
     shell=True)
   privateMasterCAKey = gpg.communicate()[0]
-  keyFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", keyID + ".private.master.asc"), "w")
-  keyFile.write(privateMasterCAKey)
+  keyFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", str(keyID) + ".private.master.asc"), "w")
+  keyFile.write(privateMasterCAKey.decode())
   keyFile.close()
   # Export private subkeys to file
   gpg = subprocess.Popen("bash -c \"{ echo '" + password + "'; } | " + gpg_cmdline \
-    + "--armor --export-secret-subkeys " + keyID + "\"", \
+    + "--armor --export-secret-subkeys " + str(keyID) + "\"", \
     stdout=subprocess.PIPE, \
     shell=True)
   privateSubKeys = gpg.communicate()[0]
-  keyFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", keyID + ".private.subkeys.asc"), "w")
-  keyFile.write(privateSubKeys)
+  keyFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", str(keyID) + ".private.subkeys.asc"), "w")
+  keyFile.write(privateSubKeys.decode())
   keyFile.close()
   # Export public key to file
-  gpg = subprocess.Popen(gpg_cmdline + "--armor --export " + keyID, stdout=subprocess.PIPE, shell=True)
+  gpg = subprocess.Popen(gpg_cmdline + "--armor --export " + str(keyID), stdout=subprocess.PIPE, shell=True)
   publicKey = gpg.communicate()[0]
-  keyFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", keyID + ".public.asc"), "w")
-  keyFile.write(publicKey)
+  keyFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", str(keyID) + ".public.asc"), "w")
+  keyFile.write(publicKey.decode())
   keyFile.close()
   # Export SSH public key to file
   if (keyType == "rsa"):
     gpg = subprocess.Popen("bash -c \"{ echo '" + password + "'; } | " + gpg_cmdline
-      + " --export-ssh-key " + keyID + "\"", \
+      + " --export-ssh-key " + str(keyID) + "\"", \
       stdout=subprocess.PIPE, shell=True)
     sshPub = gpg.communicate()[0]
-    keyFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", keyID +  ".public.ssh.asc"), "w")
-    keyFile.write(sshPub)
+    keyFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", str(keyID) +  ".public.ssh.asc"), "w")
+    keyFile.write(sshPub.decode())
     keyFile.close()
 
 
@@ -162,10 +162,10 @@ def gpg_ca_card_write(keyID, password, adminpin):
   gpg_card_wakeup()
   gpg = subprocess.Popen( \
     "bash -c \"{ echo keytocard; echo y; echo 1; echo '" + password + "'; echo '" + adminpin + "'; echo '" \
-    + adminpin + "'; echo 'save'; echo q;} | " + gpg_cmdline + " --edit-key " + keyID + "\"", \
+    + adminpin + "'; echo 'save'; echo q;} | " + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
-  return gpg.communicate()[0]
+  gpg.communicate()[0]
 
 
 def gpg_subkey_card_write(keyID, password, adminpin):
@@ -174,7 +174,7 @@ def gpg_subkey_card_write(keyID, password, adminpin):
   gpg = subprocess.Popen( \
     "bash -c \"{ echo key 1; echo keytocard; echo 1; echo '" \
     + password + "'; echo '" + adminpin + "'; echo '" + adminpin + "'; echo 'key 1'; echo 'save'; echo q; } | " \
-    + gpg_cmdline + " --edit-key " + keyID + "\"", \
+    + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
   gpg.communicate()[0]
@@ -182,7 +182,7 @@ def gpg_subkey_card_write(keyID, password, adminpin):
   gpg = subprocess.Popen( \
     "bash -c \"{ echo key 2; echo keytocard; echo 2; echo '" \
     + password + "'; echo '" + adminpin + "'; echo 'key 2'; echo 'save'; echo q;} | " \
-    + gpg_cmdline + " --edit-key " + keyID + "\"", \
+    + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
   gpg.communicate()[0]
@@ -190,7 +190,7 @@ def gpg_subkey_card_write(keyID, password, adminpin):
   gpg = subprocess.Popen( \
     "bash -c \"{ echo key 3; echo keytocard; echo 3; echo '" \
     + password + "'; echo '" + adminpin + "'; echo 'key 3'; echo 'save'; echo q;} | " \
-    + gpg_cmdline + " --edit-key " + keyID + "\"", \
+    + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
   gpg.communicate()[0]
@@ -209,16 +209,16 @@ def yk_config_touch(adminpin):
   ykman = subprocess.Popen("ykman -v | grep version | awk -F' ' '{print $5}'", \
     stdout=subprocess.PIPE, \
     shell=True)
-  version = ykman.communicate()[0]
+  version = ykman.communicate()[0].decode()
   # Debian has ancient version of ykman
   if version.strip() == "2.1.0":
     os.system("ykman openpgp touch --admin-pin " + adminpin + " --force sig fixed")
     os.system("ykman openpgp touch --admin-pin " + adminpin + " --force enc fixed")
     os.system("ykman openpgp touch --admin-pin " + adminpin + " --force aut fixed")
   else:
-    os.system("ykman openpgp set-touch --admin-pin " + adminpin + " --force sig FIXED")
-    os.system("ykman openpgp set-touch --admin-pin " + adminpin + " --force enc FIXED")
-    os.system("ykman openpgp set-touch --admin-pin " + adminpin + " --force aut FIXED")
+    os.system("ykman openpgp keys set-touch --admin-pin " + adminpin + " --force sig FIXED")
+    os.system("ykman openpgp keys set-touch --admin-pin " + adminpin + " --force enc FIXED")
+    os.system("ykman openpgp keys set-touch --admin-pin " + adminpin + " --force aut FIXED")
   os.system("ykman mode -f \"f+c\"")
 
 
@@ -227,17 +227,17 @@ if __name__ == '__main__':
   os.system("mkdir -p temp keys && chmod -R 700 temp")
   os.system("killall gpg-agent scdaemon ssh-agent > /dev/null 2>&1")
   print("\n")
-  name = raw_input('Name: ')
-  email = raw_input('Email: ')
+  name = input('Name: ')
+  email = input('Email: ')
   print("Please choose a key type:")
-  if raw_input('RSA (1) or secp256k1 (2): ') == '1':
+  if input('RSA (1) or secp256k1 (2): ') == '1':
     keyType = "rsa"
   else:
     keyType = "secp256k1"
-  password = raw_input('Desired GPG back-up file password: ')
-  expire = raw_input('Expire time in years (integer): ')
-  userpin = raw_input('Desired Yubikey/smartcard user pin#: ')
-  adminpin = raw_input('Desired Yubikey/smartcard admin pin#: ')
+  password = input('Desired GPG back-up file password: ')
+  expire = input('Expire time in years (integer): ')
+  userpin = input('Desired Yubikey/smartcard user pin#: ')
+  adminpin = input('Desired Yubikey/smartcard admin pin#: ')
   if userpin == adminpin:
     print("\nError: Smartcard user pin and admin pin cannot be the same\n")
     exit()
@@ -247,7 +247,7 @@ if __name__ == '__main__':
     + "*   WARNING: THIS WILL FACTORY RESET ANY INSERTED YUBIKEY/SMARTCARDS!   *\n" \
     + "*   Please remove any Yubikeys/smartcards that you do not want reset    *\n" \
     + "*************************************************************************\n")
-  raw_input("Press insert a Yubikey/smartcard that you intend to act as your master CA key. " \
+  input("Press insert a Yubikey/smartcard that you intend to act as your master CA key. " \
     + "\nThis card will be used for activities such as bumping expiration time and signing " \
     + "others public GPG keys.\n\n\nPress enter when ready")
 
@@ -268,7 +268,7 @@ if __name__ == '__main__':
   print("Your CA masterkey yubikey/smartcard is now setup.  Please remove it and store " \
     + "it in a safe location\n\nNow, please insert your yubikey/smartcard to be used for subkeys " \
     + "(everyday tasks such as signing, authorizing, and decryption)\n\n")
-  while raw_input("Type \"yes\" when ready: ").strip() != "yes": pass
+  while input("Type \"yes\" when ready: ").strip() != "yes": pass
   os.system("killall gpg-agent scdaemon ssh-agent > /dev/null 2>&1")
   gpg_card_factory_reset()
   gpg_card_configure_userpin(userpin)
