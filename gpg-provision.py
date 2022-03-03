@@ -64,10 +64,10 @@ def gpg_add_sig_subkey(keyID, password, expire, keyType):
 def gpg_create_key(name, email, password, expire, keyType):
   if keyType == "rsa":
     cmd_seq = "echo 8; echo S; echo E; echo Q; echo 4096; echo " + str(expire) + "y; echo y; echo '" \
-    + name + "'; echo '" + email + "'; echo O; echo '" + password + "'; echo save;"
+    + name + "'; echo '" + email + "'; echo ''; echo '" + password + "'; echo save;"
   else:
     cmd_seq = "echo 11; echo S; echo Q; echo 9; echo " + str(expire) + "y; echo y; echo '" \
-    + name + "'; echo '" + email + "'; echo O; echo '" + password + "'; echo save;"
+    + name + "'; echo '" + email + "'; echo ''; echo '" + password + "'; echo save;"
   gpg = subprocess.Popen( \
     "bash -c \"{ " + cmd_seq + " } | " + gpg_cmdline + " --full-generate-key \"", \
   stdout=subprocess.PIPE, shell=True)
@@ -219,7 +219,7 @@ def yk_config_touch(adminpin):
     os.system("ykman openpgp keys set-touch --admin-pin " + adminpin + " --force sig FIXED")
     os.system("ykman openpgp keys set-touch --admin-pin " + adminpin + " --force enc FIXED")
     os.system("ykman openpgp keys set-touch --admin-pin " + adminpin + " --force aut FIXED")
-  os.system("ykman mode -f \"f+c\"")
+  os.system("ykman config mode -f \"f+c\"")
 
 
 if __name__ == '__main__':
