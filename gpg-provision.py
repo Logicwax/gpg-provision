@@ -27,7 +27,7 @@ def gpg_add_auth_subkey(keyID, password, expire, keyType):
     cmd_seq = "echo 8; echo S; echo E; echo A; echo Q; echo 4096; echo " + str(expire) + "y; echo '" \
     + password + "'; echo save;"
   else:
-    cmd_seq = "echo 11; echo A; echo S; echo Q; echo 9; echo " + str(expire) + "y; echo '" + password \
+    cmd_seq = "echo 11; echo A; echo S; echo Q; echo 1; echo " + str(expire) + "y; echo '" + password \
     + "'; echo 'save';"
   gpg = subprocess.Popen( \
     "bash -c \"{ echo addkey; " + cmd_seq + " } | " + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
@@ -115,15 +115,13 @@ def gpg_export_keychain(keyID, password, keyType):
   keyFile.write(publicKey.decode())
   keyFile.close()
   # Export SSH public key to file
-  if (keyType == "rsa"):
-    gpg = subprocess.Popen("bash -c \"{ echo '" + password + "'; } | " + gpg_cmdline
-      + " --export-ssh-key " + str(keyID) + "\"", \
-      stdout=subprocess.PIPE, shell=True)
-    sshPub = gpg.communicate()[0]
-    keyFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", str(keyID) +  ".public.ssh.asc"), "w")
-    keyFile.write(sshPub.decode())
-    keyFile.close()
-
+  gpg = subprocess.Popen("bash -c \"{ echo '" + password + "'; } | " + gpg_cmdline
+    + " --export-ssh-key " + str(keyID) + "\"", \
+    stdout=subprocess.PIPE, shell=True)
+  sshPub = gpg.communicate()[0]
+  keyFile = open(os.path.join(os.path.abspath(os.getcwd()), "keys", str(keyID) +  ".public.ssh.asc"), "w")
+  keyFile.write(sshPub.decode())
+  keyFile.close()
 
 def gpg_card_factory_reset():
   gpg_card_wakeup()
@@ -136,21 +134,21 @@ def gpg_card_factory_reset():
   os.system("killall gpg-agent scdaemon ssh-agent > /dev/null 2>&1")
 
 
-def gpg_card_configure_userpin(userpin):
+def gpg_card_configure_userpin(userPin):
   gpg_card_wakeup()
   gpg = subprocess.Popen( \
-    "bash -c \"{ echo admin; echo passwd; echo 1; echo '123456'; echo '" + userpin + "'; echo '" \
-    + userpin + "'; echo q; echo q;} | " + gpg_cmdline + " --card-edit\"", \
+    "bash -c \"{ echo admin; echo passwd; echo 1; echo '123456'; echo '" + userPin + "'; echo '" \
+    + userPin + "'; echo q; echo q;} | " + gpg_cmdline + " --card-edit\"", \
     shell=True \
     )
   gpg.communicate()[0]
   os.system("killall gpg-agent scdaemon ssh-agent > /dev/null 2>&1")
 
 
-def gpg_card_configure_adminpin(userpin):
+def gpg_card_configure_adminpin(adminPin):
   gpg_card_wakeup()
   gpg = subprocess.Popen( \
-    "bash -c \"{ echo admin; echo passwd; echo 3; echo '12345678'; echo '" + adminpin + "'; echo '" + adminpin \
+    "bash -c \"{ echo admin; echo passwd; echo 3; echo '12345678'; echo '" + adminPin + "'; echo '" + adminPin \
     + "'; echo q; echo q;} | " + gpg_cmdline + " --card-edit\"", \
     shell=True \
     )
@@ -158,22 +156,22 @@ def gpg_card_configure_adminpin(userpin):
   os.system("killall gpg-agent scdaemon ssh-agent > /dev/null 2>&1")
 
 
-def gpg_ca_card_write(keyID, password, adminpin):
+def gpg_ca_card_write(keyID, password, adminPin):
   gpg_card_wakeup()
   gpg = subprocess.Popen( \
-    "bash -c \"{ echo keytocard; echo y; echo 1; echo '" + password + "'; echo '" + adminpin + "'; echo '" \
-    + adminpin + "'; echo 'save'; echo q;} | " + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
+    "bash -c \"{ echo keytocard; echo y; echo 1; echo '" + password + "'; echo '" + adminPin + "'; echo '" \
+    + adminPin + "'; echo 'save'; echo q;} | " + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
   gpg.communicate()[0]
 
 
-def gpg_subkey_card_write(keyID, password, adminpin):
+def gpg_subkey_card_write(keyID, password, adminPin):
   gpg_card_wakeup()
   # Write Sig key to card
   gpg = subprocess.Popen( \
     "bash -c \"{ echo key 1; echo keytocard; echo 1; echo '" \
-    + password + "'; echo '" + adminpin + "'; echo '" + adminpin + "'; echo 'key 1'; echo 'save'; echo q; } | " \
+    + password + "'; echo '" + adminPin + "'; echo '" + adminPin + "'; echo 'key 1'; echo 'save'; echo q; } | " \
     + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
@@ -181,7 +179,7 @@ def gpg_subkey_card_write(keyID, password, adminpin):
   # Write Enc key to card
   gpg = subprocess.Popen( \
     "bash -c \"{ echo key 2; echo keytocard; echo 2; echo '" \
-    + password + "'; echo '" + adminpin + "'; echo 'key 2'; echo 'save'; echo q;} | " \
+    + password + "'; echo '" + adminPin + "'; echo 'key 2'; echo 'save'; echo q;} | " \
     + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
@@ -189,7 +187,7 @@ def gpg_subkey_card_write(keyID, password, adminpin):
   # Write Auth key to card
   gpg = subprocess.Popen( \
     "bash -c \"{ echo key 3; echo keytocard; echo 3; echo '" \
-    + password + "'; echo '" + adminpin + "'; echo 'key 3'; echo 'save'; echo q;} | " \
+    + password + "'; echo '" + adminPin + "'; echo 'key 3'; echo 'save'; echo q;} | " \
     + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
@@ -204,7 +202,7 @@ def gpg_card_wakeup():
     )
   gpg.communicate()[0]
 
-def yk_config_touch(adminpin):
+def yk_config_touch(adminPin):
   os.system("sudo killall gpg-agent pcscd > /dev/null 2>&1")
   ykman = subprocess.Popen("ykman -v | grep version | awk -F' ' '{print $5}'", \
     stdout=subprocess.PIPE, \
@@ -212,13 +210,13 @@ def yk_config_touch(adminpin):
   version = ykman.communicate()[0].decode()
   # Debian has ancient version of ykman
   if version.strip() == "2.1.0":
-    os.system("ykman openpgp touch --admin-pin " + adminpin + " --force sig fixed")
-    os.system("ykman openpgp touch --admin-pin " + adminpin + " --force enc fixed")
-    os.system("ykman openpgp touch --admin-pin " + adminpin + " --force aut fixed")
+    os.system("ykman openpgp touch --admin-pin " + adminPin + " --force sig fixed")
+    os.system("ykman openpgp touch --admin-pin " + adminPin + " --force enc fixed")
+    os.system("ykman openpgp touch --admin-pin " + adminPin + " --force aut fixed")
   else:
-    os.system("ykman openpgp keys set-touch --admin-pin " + adminpin + " --force sig FIXED")
-    os.system("ykman openpgp keys set-touch --admin-pin " + adminpin + " --force enc FIXED")
-    os.system("ykman openpgp keys set-touch --admin-pin " + adminpin + " --force aut FIXED")
+    os.system("ykman openpgp keys set-touch --admin-pin " + adminPin + " --force sig FIXED")
+    os.system("ykman openpgp keys set-touch --admin-pin " + adminPin + " --force enc FIXED")
+    os.system("ykman openpgp keys set-touch --admin-pin " + adminPin + " --force aut FIXED")
   os.system("ykman config mode -f \"f+c\"")
 
 
@@ -235,12 +233,17 @@ if __name__ == '__main__':
   else:
     keyType = "secp256k1"
   password = input('Desired GPG back-up file password: ')
-  expire = input('Expire time in years (integer): ')
-  userpin = input('Desired Yubikey/smartcard user pin#: ')
-  adminpin = input('Desired Yubikey/smartcard admin pin#: ')
-  if userpin == adminpin:
-    print("\nError: Smartcard user pin and admin pin cannot be the same\n")
-    exit()
+  expire = ""
+  while (not expire.isdigit()):
+    expire = input('Expire time in years (integer): ')
+  userPin = ""
+  while (len(userPin) < 6):
+    userPin = input('Desired Yubikey/smartcard user pin# (minimum of 6 chars): ')
+  adminPin = ""
+  while (len(adminPin) < 8 or userPin == adminPin):
+    adminPin = input('Desired Yubikey/smartcard admin pin# (minimum of 8 chars): ')
+    if userPin == adminPin:
+      print("\nError: Smartcard user pin and admin pin should not be the same!\n")
 
   print("\n\n" \
     +  "*************************************************************************\n" \
@@ -251,7 +254,7 @@ if __name__ == '__main__':
     + "\nThis card will be used for activities such as bumping expiration time and signing " \
     + "others public GPG keys.\n\n\nPress enter when ready")
 
-  # Create master CA key
+  # Create master CA key.
   gpg_create_key(name, email, password, expire, keyType)
   masterkeyID = gpg_get_masterkey()
   gpg_add_sig_subkey(masterkeyID, password, expire, keyType)
@@ -260,10 +263,12 @@ if __name__ == '__main__':
   gpg_export_keychain(masterkeyID, password, keyType)
   gpg_gen_revoke_cert(masterkeyID, password)
   gpg_card_factory_reset()
-  gpg_card_configure_userpin(userpin)
-  gpg_card_configure_adminpin(adminpin)
-  gpg_ca_card_write(masterkeyID, password, adminpin)
-  yk_config_touch(adminpin)
+  # Very rarely GPG fails on first reset depending on card state, repeating for robustness.
+  gpg_card_factory_reset()
+  gpg_card_configure_userpin(userPin)
+  gpg_card_configure_adminpin(adminPin)
+  gpg_ca_card_write(masterkeyID, password, adminPin)
+  yk_config_touch(adminPin)
   os.system("reset")
   print("Your CA masterkey yubikey/smartcard is now setup.  Please remove it and store " \
     + "it in a safe location\n\nNow, please insert your yubikey/smartcard to be used for subkeys " \
@@ -271,10 +276,12 @@ if __name__ == '__main__':
   while input("Type \"yes\" when ready: ").strip() != "yes": pass
   os.system("killall gpg-agent scdaemon ssh-agent > /dev/null 2>&1")
   gpg_card_factory_reset()
-  gpg_card_configure_userpin(userpin)
-  gpg_card_configure_adminpin(adminpin)
-  gpg_subkey_card_write(masterkeyID, password, adminpin)
-  yk_config_touch(adminpin)
+  # Very rarely GPG fails on first reset depending on card state, repeating for robustness.
+  gpg_card_factory_reset()
+  gpg_card_configure_userpin(userPin)
+  gpg_card_configure_adminpin(adminPin)
+  gpg_subkey_card_write(masterkeyID, password, adminPin)
+  yk_config_touch(adminPin)
   # just for show...
   os.system("reset")
   gpg_list = subprocess.Popen(gpg_cmdline + "--list-keys " + masterkeyID, shell=True)
