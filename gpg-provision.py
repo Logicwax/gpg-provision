@@ -157,9 +157,11 @@ def gpg_card_configure_adminpin(adminPin):
 
 
 def gpg_ca_card_write(keyID, password, adminPin):
+  if not password == "":
+    password = " echo '" + password + "';"
   gpg_card_wakeup()
   gpg = subprocess.Popen( \
-    "bash -c \"{ echo keytocard; echo y; echo 1; echo '" + password + "'; echo '" + adminPin + "'; echo '" \
+    "bash -c \"{ echo keytocard; echo y; echo 1;" + password + " echo '" + adminPin + "'; echo '" \
     + adminPin + "'; echo 'save'; echo q;} | " + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
@@ -167,27 +169,29 @@ def gpg_ca_card_write(keyID, password, adminPin):
 
 
 def gpg_subkey_card_write(keyID, password, adminPin):
+  if not password == "":
+    password = " echo '" + password + "';"
   gpg_card_wakeup()
   # Write Sig key to card
   gpg = subprocess.Popen( \
-    "bash -c \"{ echo key 1; echo keytocard; echo 1; echo '" \
-    + password + "'; echo '" + adminPin + "'; echo '" + adminPin + "'; echo 'key 1'; echo 'save'; echo q; } | " \
+    "bash -c \"{ echo key 1; echo keytocard; echo 1;" \
+    + password + " echo '" + adminPin + "'; echo '" + adminPin + "'; echo 'key 1'; echo 'save'; echo q; } | " \
     + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
   gpg.communicate()[0]
   # Write Enc key to card
   gpg = subprocess.Popen( \
-    "bash -c \"{ echo key 2; echo keytocard; echo 2; echo '" \
-    + password + "'; echo '" + adminPin + "'; echo 'key 2'; echo 'save'; echo q;} | " \
+    "bash -c \"{ echo key 2; echo keytocard; echo 2;" \
+    + password + " echo '" + adminPin + "'; echo 'key 2'; echo 'save'; echo q;} | " \
     + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
   gpg.communicate()[0]
   # Write Auth key to card
   gpg = subprocess.Popen( \
-    "bash -c \"{ echo key 3; echo keytocard; echo 3; echo '" \
-    + password + "'; echo '" + adminPin + "'; echo 'key 3'; echo 'save'; echo q;} | " \
+    "bash -c \"{ echo key 3; echo keytocard; echo 3;" \
+    + password + " echo '" + adminPin + "'; echo 'key 3'; echo 'save'; echo q;} | " \
     + gpg_cmdline + " --edit-key " + str(keyID) + "\"", \
     shell=True \
     )
@@ -201,6 +205,7 @@ def gpg_card_wakeup():
     shell=True \
     )
   gpg.communicate()[0]
+
 
 def yk_config_touch(adminPin):
   os.system("sudo killall gpg-agent pcscd > /dev/null 2>&1")
@@ -219,6 +224,27 @@ def yk_config_touch(adminPin):
     os.system("ykman openpgp keys set-touch --admin-pin " + adminPin + " --force aut FIXED")
   os.system("ykman config mode -f \"f+c\"")
 
+def check_yubikey_version():
+  os.system("sudo killall gpg-agent pcscd > /dev/null 2>&1")
+  gpg = subprocess.Popen("gpg --card-status | grep Version | awk '{print $3}'", \
+    stdout=subprocess.PIPE, \
+    shell=True)
+  version = float(gpg.communicate()[0].decode())
+  if version < 3.4:
+    print("The inserted yubikey has too old of firmware version to support secp256k1 keys.  " \
+      + "Please insert a yubikey with PGP applet version 3.4 or newer.")
+    input("\n\nPress any key to try again.")
+    check_yubikey_version()
+
+def gpg_card_configure_name(firstname, lastname):
+  gpg_card_wakeup()
+  gpg = subprocess.Popen( \
+    "bash -c \"{ echo admin; echo name; echo '" + lastname + "'; echo '" + firstname + "'; echo q;} | " \
+    + gpg_cmdline + " --card-edit\"", \
+    shell=True \
+    )
+  gpg.communicate()[0]
+
 
 if __name__ == '__main__':
   os.system("rm -rf temp *.asc keys > /dev/null 2>&1")
@@ -235,7 +261,7 @@ if __name__ == '__main__':
   password = input('Desired GPG back-up file password: ')
   expire = ""
   while (not expire.isdigit()):
-    expire = input('Expire time in years (integer): ')
+    expire = input('Expire time (in years, as an integer, or use 0 for never): ')
   userPin = ""
   while (len(userPin) < 6):
     userPin = input('Desired Yubikey/smartcard user pin# (minimum of 6 chars): ')
@@ -253,6 +279,8 @@ if __name__ == '__main__':
   input("Press insert a Yubikey/smartcard that you intend to act as your master CA key. " \
     + "\nThis card will be used for activities such as bumping expiration time and signing " \
     + "others public GPG keys.\n\n\nPress enter when ready")
+  if keyType == "secp256k1":
+    check_yubikey_version()
 
   # Create master CA key.
   gpg_create_key(name, email, password, expire, keyType)
@@ -281,14 +309,19 @@ if __name__ == '__main__':
   gpg_card_configure_userpin(userPin)
   gpg_card_configure_adminpin(adminPin)
   gpg_subkey_card_write(masterkeyID, password, adminPin)
+  name = name.split(' ', 1)
+  gpg_card_configure_name(name[0], name[1])
   yk_config_touch(adminPin)
   # just for show...
   os.system("reset")
   gpg_list = subprocess.Popen(gpg_cmdline + "--list-keys " + masterkeyID, shell=True)
   gpg_list.communicate()
   os.system("rm -rf temp")
+  path = subprocess.Popen("pwd", stdout=subprocess.PIPE, shell=True)
+  path_str = path.communicate()[0].decode().strip() + "/keys/"
+  print(path_str)
   os.system("ls -alh keys")
   print("\n\n\nYour yubikey/smartcard is now provisioned with three subkeys (Signing, Authorization, and Decryption\n")
-  print("All key files are located in the \"keys\" sub-directory of wherever you ran this script, please back them up" \
-    + " onto a disk that is kept in a safe location offline.  \nThe files with \".public\" suffix are safe to be transfered" \
-    + " onto an internet connected machine\n\n")
+  print("All key files are located in the \"keys\" sub-directory (" + path_str + ") of wherever you ran this script, please back them up" \
+    + " onto a disk/microSD card that is kept in a safe location offline.  This disk should never touch an internet connected machine.  \n\nThe files " \
+    + "with \".public\" suffix are safe to be transfered onto an internet connected machine (use a separate microSD card for this).\n\n")
