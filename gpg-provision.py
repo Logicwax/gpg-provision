@@ -5,6 +5,7 @@ import subprocess
 import sys
 import ptyprocess
 
+
 gpg_cmdline = "GNUPGHOME=\"temp\" gpg " \
   + "--homedir temp " \
   + "--keyring trustedkeys.gpg " \
@@ -296,6 +297,8 @@ if __name__ == '__main__':
   gpg_card_configure_userpin(userPin)
   gpg_card_configure_adminpin(adminPin)
   gpg_ca_card_write(masterkeyID, password, adminPin)
+  name = name.split(' ', 1)
+  gpg_card_configure_name(name[0], name[1])
   yk_config_touch(adminPin)
   os.system("reset")
   print("Your CA masterkey yubikey/smartcard is now setup.  Please remove it and store " \
@@ -309,7 +312,6 @@ if __name__ == '__main__':
   gpg_card_configure_userpin(userPin)
   gpg_card_configure_adminpin(adminPin)
   gpg_subkey_card_write(masterkeyID, password, adminPin)
-  name = name.split(' ', 1)
   gpg_card_configure_name(name[0], name[1])
   yk_config_touch(adminPin)
   # just for show...
